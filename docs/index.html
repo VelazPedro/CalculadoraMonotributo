@@ -1,0 +1,719 @@
+<title>Calculadora de Monotributo — Argentina</title>
+<style>
+  :root {
+    --bg:      #0d1116;
+    --panel:   #141b23;
+    --panel-2: #1b242e;
+    --line:    #263341;
+    --line-soft:#1e2833;
+    --text:    #dfe6ec;
+    --muted:   #8296a6;
+    --accent:  #57c6c0;
+    --accent-ink: #0d1116;
+    --ok:      #7fbf6a;
+    --warn:    #e2a53f;
+    --crit:    #e0685f;
+    --shadow:  0 1px 0 rgba(255,255,255,.03) inset;
+
+    --f-mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", "Roboto Mono", monospace;
+    --f-body: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:      #e6e4de;
+      --panel:   #f5f3ef;
+      --panel-2: #fbfaf8;
+      --line:    #ccc8bf;
+      --line-soft:#ded9d1;
+      --text:    #1b2229;
+      --muted:   #5f6b75;
+      --accent:  #147370;
+      --accent-ink: #fbfaf8;
+      --ok:      #3d7a31;
+      --warn:    #97671a;
+      --crit:    #ad3a34;
+      --shadow:  0 1px 0 rgba(0,0,0,.02) inset;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#e6e4de; --panel:#f5f3ef; --panel-2:#fbfaf8; --line:#ccc8bf; --line-soft:#ded9d1;
+    --text:#1b2229; --muted:#5f6b75; --accent:#147370; --accent-ink:#fbfaf8;
+    --ok:#3d7a31; --warn:#97671a; --crit:#ad3a34; --shadow:0 1px 0 rgba(0,0,0,.02) inset;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d1116; --panel:#141b23; --panel-2:#1b242e; --line:#263341; --line-soft:#1e2833;
+    --text:#dfe6ec; --muted:#8296a6; --accent:#57c6c0; --accent-ink:#0d1116;
+    --ok:#7fbf6a; --warn:#e2a53f; --crit:#e0685f; --shadow:0 1px 0 rgba(255,255,255,.03) inset;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--f-body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 20px 72px; }
+
+  /* ── Cabecera ───────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .head-in {
+    max-width: 1060px; margin: 0 auto; padding: 22px 20px 18px;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; justify-content: space-between;
+  }
+  h1 {
+    font-family: var(--f-mono);
+    font-size: clamp(19px, 3.4vw, 25px);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 .bar { color: var(--accent); }
+  .stamp {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 2px; padding: 4px 9px;
+    white-space: nowrap;
+  }
+
+  /* ── Navegación de modos ────────────────────────────────── */
+  nav {
+    display: flex; gap: 0; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .nav-in { max-width: 1060px; margin: 0 auto; padding: 0 20px; display: flex; width: 100%; flex-wrap: wrap; }
+  .tab {
+    appearance: none; background: none; border: 0; border-bottom: 2px solid transparent;
+    color: var(--muted); font-family: var(--f-mono); font-size: 12.5px; letter-spacing: .04em;
+    padding: 12px 15px; cursor: pointer; text-transform: uppercase;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+  /* ── Paneles ────────────────────────────────────────────── */
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 3px;
+    box-shadow: var(--shadow);
+  }
+  .panel-head {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); padding: 11px 16px; border-bottom: 1px solid var(--line-soft);
+  }
+  .panel-body { padding: 18px 16px; }
+
+  section[hidden] { display: none; }
+  section { padding-top: 26px; }
+
+  .grid-2 { display: grid; grid-template-columns: minmax(0,320px) minmax(0,1fr); gap: 18px; align-items: start; }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── Controles ──────────────────────────────────────────── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field + .field { margin-top: 18px; }
+  label, .lbl {
+    font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .money-in { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 2px; background: var(--panel-2); }
+  .money-in .sign { display: grid; place-items: center; padding: 0 11px; color: var(--muted); font-family: var(--f-mono); border-right: 1px solid var(--line); }
+  input[type="text"] {
+    flex: 1; min-width: 0; background: none; border: 0; color: var(--text);
+    font-family: var(--f-mono); font-size: 19px; padding: 10px 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  input:focus { outline: none; }
+  .money-in:focus-within { border-color: var(--accent); }
+
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+  .seg button {
+    flex: 1; appearance: none; background: var(--panel-2); border: 0; color: var(--muted);
+    font-family: var(--f-mono); font-size: 12px; padding: 9px 8px; cursor: pointer; letter-spacing: .03em;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 14px; }
+
+  select {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 2px; padding: 9px 10px; font-family: var(--f-mono); font-size: 14px;
+  }
+
+  /* ── Lectura principal ──────────────────────────────────── */
+  .readout { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 20px; align-items: center; }
+  @media (max-width: 520px) { .readout { grid-template-columns: 1fr; } }
+  .cat-badge {
+    width: 96px; height: 96px; display: grid; place-items: center; border-radius: 3px;
+    border: 1px solid var(--accent); color: var(--accent);
+    font-family: var(--f-mono); font-size: 52px; font-weight: 600; line-height: 1;
+  }
+  .cat-badge.over { border-color: var(--crit); color: var(--crit); font-size: 34px; }
+  .cuota-lbl { font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .cuota {
+    font-family: var(--f-mono); font-size: clamp(30px, 6.5vw, 44px); font-weight: 600;
+    letter-spacing: -.025em; font-variant-numeric: tabular-nums; line-height: 1.15;
+  }
+  .cuota .per { font-size: 15px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+
+  /* ── Desglose ───────────────────────────────────────────── */
+  .rows { margin-top: 20px; border-top: 1px solid var(--line-soft); }
+  .row { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 14px; }
+  .row .k { color: var(--muted); }
+  .row .v { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  .row.total .k, .row.total .v { color: var(--accent); font-weight: 600; }
+
+  /* ── Medidor de tope ────────────────────────────────────── */
+  .meter-head { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 7px; }
+  .meter-head .pct { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 14px; }
+  .meter { height: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--accent); transition: width .35s ease; }
+  .meter i.warn { background: var(--warn); }
+  .meter i.crit { background: var(--crit); }
+  @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } }
+
+  /* ── Escala A→K ─────────────────────────────────────────── */
+  .scale { display: flex; gap: 3px; margin-top: 22px; }
+  .scale span {
+    flex: 1; text-align: center; font-family: var(--f-mono); font-size: 12px;
+    padding: 7px 0; border: 1px solid var(--line); border-radius: 2px;
+    color: var(--muted); background: var(--panel-2);
+  }
+  .scale span.past { color: var(--text); border-color: var(--line); }
+  .scale span.here { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+  /* ── Avisos ─────────────────────────────────────────────── */
+  .note {
+    margin-top: 20px; padding: 12px 14px; border-radius: 2px;
+    border: 1px solid var(--line); border-left: 3px solid var(--muted);
+    background: var(--panel-2); font-size: 13.5px;
+  }
+  .note.warn { border-left-color: var(--warn); }
+  .note.crit { border-left-color: var(--crit); }
+  .note.ok   { border-left-color: var(--ok); }
+  .note b { font-family: var(--f-mono); }
+  .note-t { display: block; font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+
+  /* ── Tabla ──────────────────────────────────────────────── */
+  .scroll-x { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+  th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+  th {
+    font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 400; border-bottom: 1px solid var(--line);
+  }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  td.cat { font-weight: 600; color: var(--accent); font-size: 15px; }
+  td.tot { color: var(--text); font-weight: 600; }
+  tbody tr:hover { background: var(--panel-2); }
+  tbody tr.solo-srv td.cat::after { content: "*"; color: var(--muted); font-weight: 400; }
+
+  /* ── Simulador 12 meses ─────────────────────────────────── */
+  .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+  .month { display: flex; flex-direction: column; gap: 4px; }
+  .month span { font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .month input {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 2px;
+    color: var(--text); font-family: var(--f-mono); font-size: 14px; padding: 7px 9px;
+    font-variant-numeric: tabular-nums; width: 100%;
+  }
+  .month input:focus { outline: none; border-color: var(--accent); }
+  .sim-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 20px; }
+  .btn {
+    appearance: none; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 2px;
+    font-family: var(--f-mono); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 11px 18px; cursor: pointer;
+  }
+  .btn.ghost { background: none; color: var(--muted); border: 1px solid var(--line); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .verdict { display: flex; align-items: center; gap: 14px; }
+  .arrow { font-family: var(--f-mono); font-size: 40px; line-height: 1; }
+  .arrow.up { color: var(--warn); }
+  .arrow.down { color: var(--accent); }
+  .arrow.same { color: var(--ok); }
+  .verdict-t { font-family: var(--f-mono); font-size: 18px; font-weight: 600; }
+
+  /* ── Info ───────────────────────────────────────────────── */
+  .prose { max-width: 66ch; }
+  .prose h3 { font-family: var(--f-mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 26px 0 8px; }
+  .prose h3:first-child { margin-top: 0; }
+  .prose p, .prose li { font-size: 14.5px; }
+  .prose ol, .prose ul { padding-left: 20px; }
+  .prose li { margin: 5px 0; }
+  .prose a { color: var(--accent); }
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps li { counter-increment: s; padding-left: 32px; position: relative; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px;
+    font-family: var(--f-mono); font-size: 11px; color: var(--accent);
+    border: 1px solid var(--line); border-radius: 2px; width: 21px; height: 21px;
+    display: grid; place-items: center;
+  }
+  .deadline { display: flex; gap: 10px; align-items: baseline; font-family: var(--f-mono); font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+  .deadline b { color: var(--accent); min-width: 92px; }
+
+  footer {
+    margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted);
+  }
+  footer code { font-family: var(--f-mono); }
+</style>
+
+<header>
+  <div class="head-in">
+    <h1><span class="bar">▎</span>Calculadora de Monotributo</h1>
+    <span class="stamp">Valores ARCA · vigentes desde feb 2026</span>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-in" role="tablist" aria-label="Modos">
+    <button class="tab" role="tab" id="tab-calc"  aria-controls="p-calc"  aria-selected="true">Mi categoría</button>
+    <button class="tab" role="tab" id="tab-recat" aria-controls="p-recat" aria-selected="false">Recategorización</button>
+    <button class="tab" role="tab" id="tab-tabla" aria-controls="p-tabla" aria-selected="false">Tabla completa</button>
+    <button class="tab" role="tab" id="tab-info"  aria-controls="p-info"  aria-selected="false">Cómo y cuándo</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ══ 1. Mi categoría ══════════════════════════════════ -->
+  <section id="p-calc" role="tabpanel" aria-labelledby="tab-calc">
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-head">Tus datos</div>
+        <div class="panel-body">
+          <div class="field">
+            <label for="fact">Facturación promedio</label>
+            <div class="money-in">
+              <span class="sign">$</span>
+              <input type="text" id="fact" inputmode="decimal" value="1.200.000" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="lbl">Período</span>
+            <div class="seg" id="periodo">
+              <button type="button" data-v="mes"  aria-pressed="true">Por mes</button>
+              <button type="button" data-v="anio" aria-pressed="false">Por año</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="lbl">Actividad principal</span>
+            <div class="seg" id="actividad">
+              <button type="button" data-v="1" aria-pressed="true">Servicios</button>
+              <button type="button" data-v="2" aria-pressed="false">Venta de bienes</button>
+            </div>
+          </div>
+
+          <p class="hint">El encuadre se calcula sobre el ingreso bruto anual. Con “por mes” se proyecta multiplicando por 12.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Liquidación mensual</div>
+        <div class="panel-body" id="out" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 2. Recategorización ══════════════════════════════ -->
+  <section id="p-recat" role="tabpanel" aria-labelledby="tab-recat" hidden>
+    <div class="panel">
+      <div class="panel-head">Facturación de los últimos 12 meses</div>
+      <div class="panel-body">
+        <div class="months" id="months"></div>
+        <div class="sim-actions">
+          <div class="field" style="margin:0">
+            <label for="cat-actual">Categoría actual</label>
+            <select id="cat-actual"></select>
+          </div>
+          <button class="btn ghost" type="button" id="clear-months">Vaciar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="panel-head">Resultado</div>
+      <div class="panel-body" id="out-recat" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ══ 3. Tabla completa ════════════════════════════════ -->
+  <section id="p-tabla" role="tabpanel" aria-labelledby="tab-tabla" hidden>
+    <div class="panel">
+      <div class="panel-head">Categorías vigentes · febrero 2026</div>
+      <div class="panel-body">
+        <div class="seg" id="actividad-tabla" style="max-width:320px">
+          <button type="button" data-v="1" aria-pressed="true">Servicios</button>
+          <button type="button" data-v="2" aria-pressed="false">Venta de bienes</button>
+        </div>
+        <div class="scroll-x" style="margin-top:16px">
+          <table>
+            <thead>
+              <tr>
+                <th>Cat</th><th>Tope anual</th><th>Imp. integrado</th>
+                <th>SIPA</th><th>Obra social</th><th>Cuota total</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="note">
+          <span class="note-t">Letra chica</span>
+          <b>*</b> Las categorías H, I, J y K son exclusivas de servicios y locaciones.
+          En venta de bienes, el precio máximo por unidad es <b id="precio-max"></b>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4. Info ══════════════════════════════════════════ -->
+  <section id="p-info" role="tabpanel" aria-labelledby="tab-info" hidden>
+    <div class="panel">
+      <div class="panel-head">Recategorización: cuándo y cómo</div>
+      <div class="panel-body prose">
+        <h3>Los dos vencimientos del año</h3>
+        <div class="deadline"><b>Febrero</b><span>hasta el día 5</span></div>
+        <div class="deadline"><b>Julio</b><span>hasta el día 5</span></div>
+        <p>Es obligatoria en ambas fechas. Se mira la facturación de los <strong>últimos 12 meses</strong>: si superaste el tope de tu categoría tenés que subir; si facturaste menos, podés bajar y pagar menos.</p>
+
+        <h3>Cómo se hace</h3>
+        <ol class="steps">
+          <li>Entrá a <a href="https://serviciosweb.afip.gob.ar/monotributo" target="_blank" rel="noopener noreferrer">serviciosweb.afip.gob.ar/monotributo</a>.</li>
+          <li>Iniciá sesión con CUIL/CUIT y Clave Fiscal.</li>
+          <li>Seleccioná <strong>Recategorización</strong>.</li>
+          <li>Informá el monto facturado en los últimos 12 meses.</li>
+          <li>El sistema calcula la categoría y vos confirmás.</li>
+        </ol>
+
+        <div class="note crit">
+          <span class="note-t">Si no lo hacés</span>
+          ARCA puede recategorizarte de oficio, aplicar multas o excluirte del régimen.
+        </div>
+
+        <h3>Por qué cambian los montos</h3>
+        <p>La tabla se actualiza en <strong>febrero</strong> y <strong>agosto</strong> de cada año según la variación del IPC que publica el INDEC. Los valores de esta calculadora corresponden a la actualización de febrero 2026 (+14,28 % sobre la tabla de agosto 2025).</p>
+
+        <h3>La cuota</h3>
+        <p>Lo que pagás por mes son tres componentes sumados: el <strong>impuesto integrado</strong> (que varía según prestes servicios o vendas bienes), el <strong>aporte jubilatorio SIPA</strong> y la <strong>obra social</strong>. Vence el día 20 de cada mes.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Datos y lógica de cálculo tomados de <code>monotributo.c</code> — Velaz Pedro Ezequiel.
+    Fuente de los valores: ARCA (ex AFIP), actualización IPC semestre 2/2025.
+    Esta herramienta es orientativa y no reemplaza el asesoramiento de un contador.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+/* Tabla trasladada sin cambios desde monotributo.c (febrero 2026) */
+const TABLA = [
+  { letra:'A', tope:10277988.13, srv:   4780.46, bien:   4780.46, sipa: 15616.17, os: 21990.11 },
+  { letra:'B', tope:15058447.71, srv:   9082.88, bien:   9082.88, sipa: 17177.79, os: 21990.11 },
+  { letra:'C', tope:21113696.52, srv:  15616.17, bien:  14341.38, sipa: 18895.57, os: 21990.11 },
+  { letra:'D', tope:26212853.42, srv:  25495.79, bien:  23742.95, sipa: 20785.12, os: 26133.18 },
+  { letra:'E', tope:30833964.37, srv:  47804.60, bien:  37924.98, sipa: 22863.63, os: 31869.73 },
+  { letra:'F', tope:38642048.36, srv:  67245.13, bien:  49398.08, sipa: 25149.99, os: 36650.19 },
+  { letra:'G', tope:46211109.37, srv: 122379.76, bien:  61189.87, sipa: 35209.99, os: 39518.47 },
+  { letra:'H', tope:70113407.33, srv: 350567.04, bien: 175283.51, sipa: 49293.99, os: 47485.89 },
+  { letra:'I', tope:78479211.62, srv: 697150.35, bien: 278860.14, sipa: 69011.58, os: 58640.31 },
+  { letra:'J', tope:89872640.30, srv: 836580.42, bien: 334632.18, sipa: 96616.21, os: 65810.99 },
+  { letra:'K', tope:108357084.05,srv:1171212.59, bien: 390404.20, sipa:135262.69, os: 75212.57 }
+];
+const PRECIO_MAX_UNIDAD = 613492.54;
+const SOLO_SERVICIOS = ['H','I','J','K'];
+
+const fmt = new Intl.NumberFormat('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const pesos = n => '$ ' + fmt.format(n);
+const impuesto = (c, act) => act === '1' ? c.srv : c.bien;
+const cuota    = (c, act) => impuesto(c, act) + c.sipa + c.os;
+
+/* Equivalente a buscar_categoria(): primera categoría cuyo tope alcanza */
+function buscarCategoria(anual) {
+  for (let i = 0; i < TABLA.length; i++) if (anual <= TABLA[i].tope) return i;
+  return -1;
+}
+
+/* "1.234.567,89" | "1234567.89" | "1234567" → número */
+function parseMonto(s) {
+  const limpio = String(s).replace(/[^\d.,-]/g, '').replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(limpio);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+/* ── Grupos de botones ─────────────────────────────────── */
+function grupo(id, onChange) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    [...el.querySelectorAll('button')].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    onChange(b.dataset.v);
+  });
+  return () => el.querySelector('[aria-pressed="true"]').dataset.v;
+}
+
+/* ── Pestañas ──────────────────────────────────────────── */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  });
+});
+
+/* ── 1. Mi categoría ───────────────────────────────────── */
+const inputFact = document.getElementById('fact');
+const out = document.getElementById('out');
+const getPeriodo  = grupo('periodo',  () => calcular());
+const getActividad = grupo('actividad', () => calcular());
+inputFact.addEventListener('input', calcular);
+inputFact.addEventListener('blur', () => {
+  const n = parseMonto(inputFact.value);
+  if (n > 0) inputFact.value = new Intl.NumberFormat('es-AR', { maximumFractionDigits:2 }).format(n);
+});
+
+function escalaHTML(idx) {
+  return '<div class="scale">' + TABLA.map((c, i) =>
+    `<span class="${i === idx ? 'here' : i < idx ? 'past' : ''}">${c.letra}</span>`
+  ).join('') + '</div>';
+}
+
+function calcular() {
+  const monto = parseMonto(inputFact.value);
+  const anual = getPeriodo() === 'mes' ? monto * 12 : monto;
+  const mensual = anual / 12;
+  const act = getActividad();
+
+  if (monto <= 0) {
+    out.innerHTML = `<p class="hint" style="margin:0">Ingresá cuánto facturás para ver tu categoría y tu cuota.</p>`;
+    return;
+  }
+
+  const idx = buscarCategoria(anual);
+
+  if (idx === -1) {
+    out.innerHTML = `
+      <div class="readout">
+        <div class="cat-badge over">RI</div>
+        <div>
+          <div class="cuota-lbl">Fuera del régimen</div>
+          <div class="cuota" style="font-size:26px">Superás el tope de la Cat. K</div>
+        </div>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="k">Facturación anual</span><span class="v">${pesos(anual)}</span></div>
+        <div class="row"><span class="k">Tope máximo (Cat. K)</span><span class="v">${pesos(TABLA[10].tope)}</span></div>
+        <div class="row"><span class="k">Excedente</span><span class="v">${pesos(anual - TABLA[10].tope)}</span></div>
+      </div>
+      <div class="note crit">
+        <span class="note-t">Qué corresponde</span>
+        Tenés que inscribirte como <b>Responsable Inscripto</b> (IVA + Ganancias).
+        Consultá con un contador para hacer la transición.
+      </div>`;
+    return;
+  }
+
+  const c = TABLA[idx];
+  const imp = impuesto(c, act);
+  const total = cuota(c, act);
+  const uso = (anual / c.tope) * 100;
+  const nivel = uso >= 95 ? 'crit' : uso >= 85 ? 'warn' : '';
+
+  let aviso = '';
+  if (uso >= 85 && idx < TABLA.length - 1) {
+    const sig = TABLA[idx + 1];
+    aviso = `
+      <div class="note warn">
+        <span class="note-t">Atención con la recategorización</span>
+        Estás usando el <b>${uso.toFixed(1)} %</b> del tope de tu categoría.
+        Te separan <b>${pesos(sig.tope - anual)}</b> anuales de pasar a la <b>Cat. ${sig.letra}</b>.
+      </div>`;
+  }
+  if (act === '2' && SOLO_SERVICIOS.includes(c.letra)) {
+    aviso += `
+      <div class="note crit">
+        <span class="note-t">Ojo</span>
+        La <b>Cat. ${c.letra}</b> es exclusiva de servicios y locaciones: la venta de bienes no puede encuadrarse acá.
+      </div>`;
+  }
+
+  out.innerHTML = `
+    <div class="readout">
+      <div class="cat-badge">${c.letra}</div>
+      <div>
+        <div class="cuota-lbl">Cuota mensual total</div>
+        <div class="cuota">${pesos(total)} <span class="per">/ mes</span></div>
+      </div>
+    </div>
+
+    <div class="rows">
+      <div class="row"><span class="k">Impuesto integrado (${act === '1' ? 'servicios' : 'venta de bienes'})</span><span class="v">${pesos(imp)}</span></div>
+      <div class="row"><span class="k">Aporte SIPA (jubilación)</span><span class="v">${pesos(c.sipa)}</span></div>
+      <div class="row"><span class="k">Obra social</span><span class="v">${pesos(c.os)}</span></div>
+      <div class="row total"><span class="k">Total</span><span class="v">${pesos(total)}</span></div>
+    </div>
+
+    <div class="meter-head">
+      <span class="lbl">Uso del tope de la Cat. ${c.letra}</span>
+      <span class="pct">${uso.toFixed(1)} %</span>
+    </div>
+    <div class="meter"><i class="${nivel}" style="width:${Math.min(uso, 100).toFixed(1)}%"></i></div>
+
+    <div class="rows" style="margin-top:16px">
+      <div class="row"><span class="k">Facturación mensual</span><span class="v">${pesos(mensual)}</span></div>
+      <div class="row"><span class="k">Facturación anual proyectada</span><span class="v">${pesos(anual)}</span></div>
+      <div class="row"><span class="k">Tope anual de la categoría</span><span class="v">${pesos(c.tope)}</span></div>
+    </div>
+
+    ${escalaHTML(idx)}
+    ${aviso}`;
+}
+
+/* ── 2. Recategorización ───────────────────────────────── */
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const cont = document.getElementById('months');
+const outRecat = document.getElementById('out-recat');
+
+/* Etiqueta los 12 casilleros hacia atrás desde el mes actual */
+const hoy = new Date();
+cont.innerHTML = Array.from({ length: 12 }, (_, k) => {
+  const d = new Date(hoy.getFullYear(), hoy.getMonth() - (11 - k), 1);
+  const et = `${MESES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+  return `<label class="month"><span>${et}</span>
+    <input type="text" inputmode="decimal" data-m="${k}" placeholder="0" autocomplete="off"></label>`;
+}).join('');
+
+const selCat = document.getElementById('cat-actual');
+selCat.innerHTML = '<option value="">— elegir —</option>' +
+  TABLA.map(c => `<option value="${c.letra}">Categoría ${c.letra}</option>`).join('');
+
+cont.addEventListener('input', simular);
+selCat.addEventListener('change', simular);
+document.getElementById('clear-months').addEventListener('click', () => {
+  cont.querySelectorAll('input').forEach(i => i.value = '');
+  simular();
+});
+
+function simular() {
+  const valores = [...cont.querySelectorAll('input')].map(i => parseMonto(i.value));
+  const total = valores.reduce((a, b) => a + b, 0);
+  const cargados = valores.filter(v => v > 0).length;
+
+  if (total <= 0) {
+    outRecat.innerHTML = `<p class="hint" style="margin:0">Cargá al menos un mes para simular tu recategorización.</p>`;
+    return;
+  }
+
+  const idxNueva = buscarCategoria(total);
+  const letraActual = selCat.value;
+  const idxActual = TABLA.findIndex(c => c.letra === letraActual);
+
+  let cabecera = `
+    <div class="rows" style="margin-top:0;border-top:0">
+      <div class="row total"><span class="k">Facturación 12 meses</span><span class="v">${pesos(total)}</span></div>
+      <div class="row"><span class="k">Meses cargados</span><span class="v">${cargados} de 12</span></div>
+      <div class="row"><span class="k">Promedio mensual</span><span class="v">${pesos(total / 12)}</span></div>
+    </div>`;
+
+  if (idxNueva === -1) {
+    outRecat.innerHTML = cabecera + `
+      <div class="note crit" >
+        <span class="note-t">Fuera del régimen</span>
+        Superás el tope de la <b>Cat. K</b>: corresponde inscribirse como <b>Responsable Inscripto</b>.
+      </div>`;
+    return;
+  }
+
+  const nueva = TABLA[idxNueva];
+  let veredicto;
+
+  if (idxActual === -1) {
+    veredicto = `
+      <div class="verdict">
+        <span class="arrow same">→</span>
+        <div>
+          <div class="verdict-t">Te corresponde la Categoría ${nueva.letra}</div>
+          <div class="hint" style="margin:0">Elegí tu categoría actual para ver si tenés que moverte.</div>
+        </div>
+      </div>`;
+  } else if (idxNueva === idxActual) {
+    veredicto = `
+      <div class="verdict">
+        <span class="arrow same">✔</span>
+        <div>
+          <div class="verdict-t">Seguís en la Categoría ${nueva.letra}</div>
+          <div class="hint" style="margin:0">Sin cambios: tu facturación entra en el mismo tramo.</div>
+        </div>
+      </div>`;
+  } else {
+    const sube = idxNueva > idxActual;
+    const actual = TABLA[idxActual];
+    const dif = cuota(nueva, '1') - cuota(actual, '1');
+    veredicto = `
+      <div class="verdict">
+        <span class="arrow ${sube ? 'up' : 'down'}">${sube ? '↑' : '↓'}</span>
+        <div>
+          <div class="verdict-t">${sube ? 'Subís' : 'Bajás'} de ${actual.letra} a ${nueva.letra}</div>
+          <div class="hint" style="margin:0">
+            La cuota de servicios ${sube ? 'aumenta' : 'baja'} ${pesos(Math.abs(dif))} por mes
+            (${pesos(cuota(actual,'1'))} → ${pesos(cuota(nueva,'1'))}).
+          </div>
+        </div>
+      </div>`;
+  }
+
+  outRecat.innerHTML = veredicto + cabecera + escalaHTML(idxNueva) + `
+    <div class="note">
+      <span class="note-t">Próximos vencimientos</span>
+      Julio 2026 (hasta el 5 de julio) · Febrero 2027 (hasta el 5 de febrero).
+    </div>`;
+}
+
+/* ── 3. Tabla completa ─────────────────────────────────── */
+const tbody = document.getElementById('tbody');
+document.getElementById('precio-max').textContent = pesos(PRECIO_MAX_UNIDAD);
+const getActTabla = grupo('actividad-tabla', () => pintarTabla());
+
+function pintarTabla() {
+  const act = getActTabla();
+  tbody.innerHTML = TABLA.map(c => {
+    const solo = SOLO_SERVICIOS.includes(c.letra);
+    const imp = impuesto(c, act);
+    const noAplica = act === '2' && solo;
+    return `<tr class="${solo ? 'solo-srv' : ''}">
+      <td class="cat">${c.letra}</td>
+      <td>${pesos(c.tope)}</td>
+      <td>${noAplica ? '—' : pesos(imp)}</td>
+      <td>${pesos(c.sipa)}</td>
+      <td>${pesos(c.os)}</td>
+      <td class="tot">${noAplica ? '—' : pesos(cuota(c, act))}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Arranque ──────────────────────────────────────────── */
+calcular();
+simular();
+pintarTabla();
+</script>
