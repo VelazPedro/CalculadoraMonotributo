@@ -32,5 +32,3 @@ Cada recategorización ARCA publica una tabla nueva. Hay que reemplazarla en dos
 
 - `monotributo.c` → la constante `TABLA`
 - `docs/index.html` → la constante `TABLA` del `<script>` (mismos campos, mismo orden)
-
-Proximamente, su versión en Python con acceso a una API que la mantenga al día.
